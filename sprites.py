@@ -5,6 +5,9 @@ import pygame
 import os
 import config
 
+from queue import LifoQueue
+from itertools import permutations
+from queue import PriorityQueue
 
 class BaseSprite(pygame.sprite.Sprite):
     images = dict()
@@ -104,12 +107,13 @@ class Agent(BaseSprite):
     def get_agent_path(self, coin_distance):
         pass
 
-
 class ExampleAgent(Agent):
     def __init__(self, x, y, file_name):
         super().__init__(x, y, file_name)
 
     def get_agent_path(self, coin_distance):
+        for line in coin_distance:
+            print(line)
         path = [i for i in range(1, len(coin_distance))]
         random.shuffle(path)
         return [0] + path + [0]
@@ -119,8 +123,98 @@ class Aki(Agent):
         super().__init__(x, y, file_name)
 
     def get_agent_path(self, coin_distance):
-        path = [i for i in range(1, len(coin_distance))]
-        random.shuffle(path)
-        return [0] + path + [0]
+        partial_path = []
+        gen_cnt = 0
+        stack = LifoQueue()
 
+        coin_cnt = len(coin_distance)
+        all_coins = set([coin for coin in range(0, coin_cnt)])
 
+        if coin_cnt < 1:
+            return []
+
+        partial_path.append([0])
+        stack.put((0, gen_cnt))
+        gen_cnt += 1
+        while not stack.empty():
+            curr, curr_gen_cnt = stack.get()
+            curr_partial_path = partial_path[curr_gen_cnt]
+
+            if len(curr_partial_path) == coin_cnt:
+                return curr_partial_path + [0]
+
+            adj = list(all_coins - set(curr_partial_path))
+            adj.sort(reverse=True)
+            adj.sort(key=lambda coin: coin_distance[curr][coin], reverse=True)
+            print("list of adj")
+            print(adj)
+
+            for coin in adj:
+                partial_path.append(curr_partial_path + [coin])
+                stack.put((coin, gen_cnt))
+                gen_cnt += 1
+
+        print("Pozz")
+        return [0, 0]
+
+class Jocke(Agent):
+    def __init__(self, x, y, file_name):
+        super().__init__(x, y, file_name)
+
+    def get_agent_path(self, coin_distance):
+        coin_cnt = len(coin_distance)
+        if coin_cnt < 1:
+            return []
+
+        all_perms = list(permutations(range(1, coin_cnt)))
+        print(all_perms)
+        min_cost = math.inf
+        path = []
+        for perm in all_perms:
+            cost = coin_distance[0][perm[0]]
+            for i in range(0, len(perm) - 1):
+                cost += coin_distance[perm[i]][perm[i + 1]]
+            cost += coin_distance[perm[len(perm) - 1]][0]
+
+            if cost < min_cost:
+                min_cost = cost
+                path = perm
+
+        return [0] + list(path) + [0]
+
+class Micko(Agent):
+    def __init__(self, x, y, file_name):
+        super().__init__(x, y, file_name)
+
+    def get_agent_path(self, coin_distance):
+        partial_path = []
+        gen_cnt = 0
+        pq = PriorityQueue()
+
+        coin_cnt = len(coin_distance)
+        all_coins = set([coin for coin in range(0, coin_cnt)])
+
+        if coin_cnt < 1:
+            return []
+
+        partial_path.append([0])
+        pq.put((1, 0, gen_cnt))
+        gen_cnt += 1
+        while not pq.empty():
+            len_curr_partial_path, curr, curr_gen_cnt = pq.get()
+            curr_partial_path = partial_path[curr_gen_cnt]
+
+            if len(curr_partial_path) == coin_cnt:
+                return curr_partial_path + [0]
+
+            adj = list(all_coins - set(curr_partial_path))
+            print("list of adj")
+            print(adj)
+
+            for coin in adj:
+                partial_path.append(curr_partial_path + [coin])
+                pq.put((len(curr_partial_path) + 1, -coin, gen_cnt))
+                gen_cnt += 1
+
+        print("Pozz")
+        return [0, 0]
