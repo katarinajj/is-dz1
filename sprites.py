@@ -182,7 +182,7 @@ class Jocke(Agent):
 
         return [0] + list(path) + [0]
 
-class Micko(Agent):
+class Uki(Agent):
     def __init__(self, x, y, file_name):
         super().__init__(x, y, file_name)
 
@@ -214,6 +214,46 @@ class Micko(Agent):
             for coin in adj:
                 partial_path.append(curr_partial_path + [coin])
                 pq.put((len(curr_partial_path) + 1, -coin, gen_cnt))
+                gen_cnt += 1
+
+        print("Pozz")
+        return [0, 0]
+
+class Micko(Agent):
+    def __init__(self, x, y, file_name):
+        super().__init__(x, y, file_name)
+
+    @staticmethod
+    def mst(partial_path) -> int:
+        return len(partial_path)
+
+    def get_agent_path(self, coin_distance):
+        partial_path = []
+        gen_cnt = 0
+        pq = PriorityQueue()
+
+        coin_cnt = len(coin_distance)
+        all_coins = set([coin for coin in range(0, coin_cnt)])
+
+        if coin_cnt < 1:
+            return []
+
+        partial_path.append([0])
+        pq.put((1, 0, gen_cnt))
+        gen_cnt += 1
+        while not pq.empty():
+            heuristics, len_partial_path, curr, curr_gen_cnt = pq.get()
+            curr_partial_path = partial_path[curr_gen_cnt]
+
+            if len(curr_partial_path) == coin_cnt:
+                return curr_partial_path + [0]
+
+            adj = list(all_coins - set(curr_partial_path))
+
+            for coin in adj:
+                partial_path.append(curr_partial_path + [coin])
+                heuristics = Micko.mst(curr_partial_path + [coin])
+                pq.put((heuristics, len(curr_partial_path) + 1, -coin, gen_cnt))
                 gen_cnt += 1
 
         print("Pozz")
