@@ -145,8 +145,7 @@ class Aki(Agent):
             adj = list(all_coins - set(curr_partial_path))
             adj.sort(reverse=True)
             adj.sort(key=lambda coin: coin_distance[curr][coin], reverse=True)
-            print("list of adj")
-            print(adj)
+            # print("list of adj: " + str(adj))
 
             for coin in adj:
                 partial_path.append(curr_partial_path + [coin])
@@ -166,7 +165,7 @@ class Jocke(Agent):
             return []
 
         all_perms = list(permutations(range(1, coin_cnt)))
-        print(all_perms)
+        # print(all_perms)
         min_cost = math.inf
         path = []
         for perm in all_perms:
@@ -192,7 +191,6 @@ class Uki(Agent):
 
         coin_cnt = len(coin_distance)
         all_coins = set([coin for coin in range(0, coin_cnt)])
-
         if coin_cnt < 1:
             return []
 
@@ -205,6 +203,7 @@ class Uki(Agent):
             len_curr_partial_path = abs(len_curr_partial_path)
             curr_partial_path = partial_path[curr_gen_cnt]
 
+            # check for end
             if len_curr_partial_path == coin_cnt + 1:
                 return curr_partial_path
 
@@ -221,8 +220,6 @@ class Uki(Agent):
                 pq.put((next_cost, -next_len, coin, gen_cnt))
                 gen_cnt += 1
 
-            # print(pq.queue)
-
         print("Pozz")
         return [0, 0]
 
@@ -233,6 +230,7 @@ class Node:
 
 def valid_edge(graph, start, end) -> bool:
     # From start to end there is not a path in our current graph
+    # print("Zovem za " + str(start) + " i " + str(end))
     visited = [False] * len(graph)
     queue = Queue()
     queue.put(start)
@@ -248,10 +246,21 @@ def valid_edge(graph, start, end) -> bool:
 
     return True
 
+mst_cache = {"0": 0}
+
+def list_to_str(my_list) -> str:
+    # my_list = set(my_list)
+    ret = ""
+    for x in my_list:
+        ret += str(x)
+    return ret
 
 def mst(coins, coin_distance) -> int:
-    coin_cnt = len(coins)
+    key = list_to_str(coins)
+    if key in mst_cache.keys():
+        return mst_cache[key]
 
+    coin_cnt = len(coins)
     if coin_cnt == 0 or coin_cnt == 1:
         return 0
 
@@ -260,22 +269,25 @@ def mst(coins, coin_distance) -> int:
     edge_cnt = 0
     for row in coins:
         for col in coins:
-            if col != row:
+            if col > row:
                 pq.put((coin_distance[row][col], row, col))
 
-    graph = []
+    graph = [None] * len(coin_distance)
     for coin in coins:
         node = Node(coin, [])
-        graph.append(node)
+        graph[coin] = node
 
     while (not pq.empty()) and (edge_cnt < coin_cnt - 1):
         cost, start, end = pq.get()
 
-        if valid_edge(coin_distance, start, end):
+        if valid_edge(graph, start, end):
             graph[start].adj_list.append(end)
+            graph[end].adj_list.append(start)
             ret += cost
             edge_cnt += 1
 
+    # print("RET MST JE " + str(ret))
+    mst_cache[key] = ret
     return ret
 
 class Micko(Agent):
@@ -289,7 +301,6 @@ class Micko(Agent):
 
         coin_cnt = len(coin_distance)
         all_coins = set([coin for coin in range(0, coin_cnt)])
-
         if coin_cnt < 1:
             return []
 
@@ -315,19 +326,13 @@ class Micko(Agent):
                 next_len = len_curr_partial_path + 1
 
                 coins_for_mst = list(all_coins - set(next_partial_path[1:-1]))
-                print("Next partial path")
-                print(next_partial_path)
-                print("Coins for mst")
-                print(coins_for_mst)
-                # add cashing
-                #heuristics = mst(coins_for_mst, coin_distance)
-                heuristics = 2
+                # print("Coins for mst: " + str(coins_for_mst))
+
+                heuristics = mst(coins_for_mst, coin_distance)
 
                 partial_path.append(next_partial_path)
                 pq.put((next_cost + heuristics, -next_len, coin, gen_cnt, next_cost))
                 gen_cnt += 1
-
-            # print(pq.queue)
 
         print("Pozz")
         return [0, 0]
