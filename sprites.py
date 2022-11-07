@@ -5,9 +5,8 @@ import pygame
 import os
 import config
 
-from queue import LifoQueue
+from queue import LifoQueue, PriorityQueue, Queue
 from itertools import permutations
-from queue import PriorityQueue
 
 class BaseSprite(pygame.sprite.Sprite):
     images = dict()
@@ -198,34 +197,90 @@ class Uki(Agent):
             return []
 
         partial_path.append([0])
-        pq.put((1, 0, gen_cnt))
+        pq.put((0, 1, 0, gen_cnt))        # (cost, len, coin, gen_cnt)
         gen_cnt += 1
         while not pq.empty():
-            len_curr_partial_path, curr, curr_gen_cnt = pq.get()
+            curr_cost, len_curr_partial_path, curr, curr_gen_cnt = pq.get()
+
+            len_curr_partial_path = abs(len_curr_partial_path)
             curr_partial_path = partial_path[curr_gen_cnt]
 
-            if len(curr_partial_path) == coin_cnt:
-                return curr_partial_path + [0]
+            if len_curr_partial_path == coin_cnt + 1:
+                return curr_partial_path
 
             adj = list(all_coins - set(curr_partial_path))
-            print("list of adj")
-            print(adj)
+            if len(adj) == 0:
+                adj = [0]
 
             for coin in adj:
-                partial_path.append(curr_partial_path + [coin])
-                pq.put((len(curr_partial_path) + 1, -coin, gen_cnt))
+                next_cost = curr_cost + coin_distance[curr][coin]
+                next_partial_path = curr_partial_path + [coin]
+                next_len = len_curr_partial_path + 1
+
+                partial_path.append(next_partial_path)
+                pq.put((next_cost, -next_len, coin, gen_cnt))
                 gen_cnt += 1
+
+            # print(pq.queue)
 
         print("Pozz")
         return [0, 0]
 
+class Node:
+    def __init__(self, val, adj_list):
+        self.val = val
+        self.adj_list = adj_list
+
+def valid_edge(graph, start, end) -> bool:
+    # From start to end there is not a path in our current graph
+    visited = [False] * len(graph)
+    queue = Queue()
+    queue.put(start)
+    while not queue.empty():
+        curr = queue.get()
+        visited[curr] = True
+        for adj in graph[curr].adj_list:
+            if adj == end:
+                return False
+
+            if not visited[adj]:
+                queue.put(adj)
+
+    return True
+
+
+def mst(coins, coin_distance) -> int:
+    coin_cnt = len(coins)
+
+    if coin_cnt == 0 or coin_cnt == 1:
+        return 0
+
+    pq = PriorityQueue()
+    ret = 0
+    edge_cnt = 0
+    for row in coins:
+        for col in coins:
+            if col != row:
+                pq.put((coin_distance[row][col], row, col))
+
+    graph = []
+    for coin in coins:
+        node = Node(coin, [])
+        graph.append(node)
+
+    while (not pq.empty()) and (edge_cnt < coin_cnt - 1):
+        cost, start, end = pq.get()
+
+        if valid_edge(coin_distance, start, end):
+            graph[start].adj_list.append(end)
+            ret += cost
+            edge_cnt += 1
+
+    return ret
+
 class Micko(Agent):
     def __init__(self, x, y, file_name):
         super().__init__(x, y, file_name)
-
-    @staticmethod
-    def mst(partial_path) -> int:
-        return len(partial_path)
 
     def get_agent_path(self, coin_distance):
         partial_path = []
@@ -239,22 +294,40 @@ class Micko(Agent):
             return []
 
         partial_path.append([0])
-        pq.put((1, 0, gen_cnt))
+        pq.put((0, 1, 0, gen_cnt, 0))  # (assessment, len, coin, gen_cnt, cost)
         gen_cnt += 1
         while not pq.empty():
-            heuristics, len_partial_path, curr, curr_gen_cnt = pq.get()
+            x, len_curr_partial_path, curr, curr_gen_cnt, curr_cost = pq.get()
+
+            len_curr_partial_path = abs(len_curr_partial_path)
             curr_partial_path = partial_path[curr_gen_cnt]
 
-            if len(curr_partial_path) == coin_cnt:
-                return curr_partial_path + [0]
+            if len_curr_partial_path == coin_cnt + 1:
+                return curr_partial_path
 
             adj = list(all_coins - set(curr_partial_path))
+            if len(adj) == 0:
+                adj = [0]
 
             for coin in adj:
-                partial_path.append(curr_partial_path + [coin])
-                heuristics = Micko.mst(curr_partial_path + [coin])
-                pq.put((heuristics, len(curr_partial_path) + 1, -coin, gen_cnt))
+                next_cost = curr_cost + coin_distance[curr][coin]
+                next_partial_path = curr_partial_path + [coin]
+                next_len = len_curr_partial_path + 1
+
+                coins_for_mst = list(all_coins - set(next_partial_path[1:-1]))
+                print("Next partial path")
+                print(next_partial_path)
+                print("Coins for mst")
+                print(coins_for_mst)
+                # add cashing
+                #heuristics = mst(coins_for_mst, coin_distance)
+                heuristics = 2
+
+                partial_path.append(next_partial_path)
+                pq.put((next_cost + heuristics, -next_len, coin, gen_cnt, next_cost))
                 gen_cnt += 1
+
+            # print(pq.queue)
 
         print("Pozz")
         return [0, 0]
