@@ -127,6 +127,7 @@ class Aki(Agent):
         stack = LifoQueue()
 
         coin_cnt = len(coin_distance)
+        visited = [False] * coin_cnt
         all_coins = set([coin for coin in range(0, coin_cnt)])
 
         if coin_cnt < 1:
@@ -139,10 +140,13 @@ class Aki(Agent):
             curr, curr_gen_cnt = stack.get()
             curr_partial_path = partial_path[curr_gen_cnt]
 
+            visited[curr] = True
+
             if len(curr_partial_path) == coin_cnt:
                 return curr_partial_path + [0]
 
-            adj = list(all_coins - set(curr_partial_path))
+            adj = [coin for coin in all_coins if not visited[coin]]
+            # adj = list(all_coins - set(curr_partial_path))
             adj.sort(reverse=True)
             adj.sort(key=lambda coin: coin_distance[curr][coin], reverse=True)
             # print("list of adj: " + str(adj))
