@@ -184,6 +184,25 @@ class Jocke(Agent):
 
         return [0] + list(path) + [0]
 
+def list_to_str(my_list) -> str:
+    # my_list = set(my_list)
+    ret = ""
+    for x in my_list:
+        ret += str(x)
+    return ret
+
+def dp_check_skip(dp_expand, curr_partial_path, curr, curr_cost):
+    curr_set = set(curr_partial_path) - {curr}
+    key = list_to_str(curr_set) + "-" + str(curr)  # key = "012-3"
+
+    if key not in dp_expand.keys():
+        dp_expand[key] = curr_cost
+        return False
+    if curr_cost >= dp_expand[key]:  # expanding the same partial_path with bigger cost -> skip
+        return True
+
+    return False
+
 class Uki(Agent):
     def __init__(self, x, y, file_name):
         super().__init__(x, y, file_name)
@@ -199,25 +218,19 @@ class Uki(Agent):
         if coin_cnt < 1:
             return []
 
-        expand = [None] * coin_cnt
-
+        dp_expand = {}
         partial_path.append([0])
         pq.put((0, 1, 0, gen_cnt))        # (cost, len, coin, gen_cnt)
         gen_cnt += 1
         while not pq.empty():
             curr_cost, len_curr_partial_path, curr, curr_gen_cnt = pq.get()
-
+            # curr_gen_cnt = abs(curr_gen_cnt)
             len_curr_partial_path = abs(len_curr_partial_path)
             curr_partial_path = partial_path[curr_gen_cnt]
 
             # dp check
-            curr_set = set(curr_partial_path) - {curr}
-            if expand[curr] is None:  # first time expanding curr
-                expand[curr] = curr_set
-            elif expand[curr] == curr_set:  # expanding the same partial_path with bigger cost -> skip
+            if dp_check_skip(dp_expand, curr_partial_path, curr, curr_cost):
                 continue
-            elif len(expand[curr]) < len(curr_set):
-                expand[curr] = curr_set
 
             # expanding node
             expand_cnt += 1
@@ -250,7 +263,7 @@ class Node:
 
 def valid_edge(graph, start, end) -> bool:
     # From start to end there is not a path in our current graph
-    # print("Zovem za " + str(start) + " i " + str(end))
+    # print("Calling for " + str(start) + " i " + str(end))
     visited = [False] * len(graph)
     queue = Queue()
     queue.put(start)
@@ -267,13 +280,6 @@ def valid_edge(graph, start, end) -> bool:
     return True
 
 mst_cache = {"0": 0}
-
-def list_to_str(my_list) -> str:
-    # my_list = set(my_list)
-    ret = ""
-    for x in my_list:
-        ret += str(x)
-    return ret
 
 def mst(coins, coin_distance) -> int:
     key = list_to_str(coins)
@@ -325,8 +331,7 @@ class Micko(Agent):
         if coin_cnt < 1:
             return []
 
-        expand = [None] * coin_cnt
-
+        dp_expand = {}
         partial_path.append([0])
         pq.put((0, 1, 0, gen_cnt, 0))  # (assessment, len, coin, gen_cnt, cost)
         gen_cnt += 1
@@ -337,13 +342,8 @@ class Micko(Agent):
             curr_partial_path = partial_path[curr_gen_cnt]
 
             # dp check
-            curr_set = set(curr_partial_path) - {curr}
-            if expand[curr] is None:  # first time expanding curr
-                expand[curr] = curr_set
-            elif expand[curr] == curr_set:  # expanding the same partial_path with bigger cost -> skip
+            if dp_check_skip(dp_expand, curr_partial_path, curr, curr_cost):
                 continue
-            elif len(expand[curr]) < len(curr_set):
-                expand[curr] = curr_set
 
             expand_cnt += 1
             print(str(expand_cnt) + ". Expanding " + str(curr) + " with path " + str(curr_partial_path))
@@ -368,7 +368,7 @@ class Micko(Agent):
                 partial_path.append(next_partial_path)
                 pq.put((next_cost + heuristics, -next_len, coin, gen_cnt, next_cost))
                 # if curr == 5:
-                #     print("Za curr = " + str(curr) + " ubacujem")
+                #     print("For curr = " + str(curr) + " adding")
                 #     print((next_cost + heuristics, -next_len, coin, gen_cnt, next_cost))
                 gen_cnt += 1
 
