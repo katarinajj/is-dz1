@@ -191,12 +191,15 @@ class Uki(Agent):
     def get_agent_path(self, coin_distance):
         partial_path = []
         gen_cnt = 0
+        expand_cnt = 0
         pq = PriorityQueue()
 
         coin_cnt = len(coin_distance)
         all_coins = set([coin for coin in range(0, coin_cnt)])
         if coin_cnt < 1:
             return []
+
+        expand = [None] * coin_cnt
 
         partial_path.append([0])
         pq.put((0, 1, 0, gen_cnt))        # (cost, len, coin, gen_cnt)
@@ -206,6 +209,19 @@ class Uki(Agent):
 
             len_curr_partial_path = abs(len_curr_partial_path)
             curr_partial_path = partial_path[curr_gen_cnt]
+
+            # dp check
+            curr_set = set(curr_partial_path) - {curr}
+            if expand[curr] is None:  # first time expanding curr
+                expand[curr] = curr_set
+            elif expand[curr] == curr_set:  # expanding the same partial_path with bigger cost -> skip
+                continue
+            elif len(expand[curr]) < len(curr_set):
+                expand[curr] = curr_set
+
+            # expanding node
+            expand_cnt += 1
+            print(str(expand_cnt) + ". Expanding " + str(curr) + " with path " + str(curr_partial_path))
 
             # check for end
             if len_curr_partial_path == coin_cnt + 1:
@@ -301,12 +317,15 @@ class Micko(Agent):
     def get_agent_path(self, coin_distance):
         partial_path = []
         gen_cnt = 0
+        expand_cnt = 0
         pq = PriorityQueue()
 
         coin_cnt = len(coin_distance)
         all_coins = set([coin for coin in range(0, coin_cnt)])
         if coin_cnt < 1:
             return []
+
+        expand = [None] * coin_cnt
 
         partial_path.append([0])
         pq.put((0, 1, 0, gen_cnt, 0))  # (assessment, len, coin, gen_cnt, cost)
@@ -316,6 +335,18 @@ class Micko(Agent):
 
             len_curr_partial_path = abs(len_curr_partial_path)
             curr_partial_path = partial_path[curr_gen_cnt]
+
+            # dp check
+            curr_set = set(curr_partial_path) - {curr}
+            if expand[curr] is None:  # first time expanding curr
+                expand[curr] = curr_set
+            elif expand[curr] == curr_set:  # expanding the same partial_path with bigger cost -> skip
+                continue
+            elif len(expand[curr]) < len(curr_set):
+                expand[curr] = curr_set
+
+            expand_cnt += 1
+            print(str(expand_cnt) + ". Expanding " + str(curr) + " with path " + str(curr_partial_path))
 
             if len_curr_partial_path == coin_cnt + 1:
                 return curr_partial_path
@@ -336,6 +367,9 @@ class Micko(Agent):
 
                 partial_path.append(next_partial_path)
                 pq.put((next_cost + heuristics, -next_len, coin, gen_cnt, next_cost))
+                # if curr == 5:
+                #     print("Za curr = " + str(curr) + " ubacujem")
+                #     print((next_cost + heuristics, -next_len, coin, gen_cnt, next_cost))
                 gen_cnt += 1
 
         print("Pozz")
