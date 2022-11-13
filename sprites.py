@@ -123,38 +123,30 @@ class Aki(Agent):
 
     def get_agent_path(self, coin_distance):
         partial_path = []
-        gen_cnt = 0
         stack = LifoQueue()
 
         coin_cnt = len(coin_distance)
+        if coin_cnt < 1:
+            return []
         visited = [False] * coin_cnt
         all_coins = set([coin for coin in range(0, coin_cnt)])
 
-        if coin_cnt < 1:
-            return []
-
-        partial_path.append([0])
-        stack.put((0, gen_cnt))
-        gen_cnt += 1
+        stack.put(0)
         while not stack.empty():
-            curr, curr_gen_cnt = stack.get()
-            curr_partial_path = partial_path[curr_gen_cnt]
-
+            curr = stack.get()
             visited[curr] = True
+            partial_path.append(curr)
 
-            if len(curr_partial_path) == coin_cnt:
-                return curr_partial_path + [0]
+            # check for end
+            if len(partial_path) == coin_cnt:
+                return partial_path + [0]
 
             adj = [coin for coin in all_coins if not visited[coin]]
-            # adj = list(all_coins - set(curr_partial_path))
             adj.sort(reverse=True)
             adj.sort(key=lambda coin: coin_distance[curr][coin], reverse=True)
-            # print("list of adj: " + str(adj))
 
             for coin in adj:
-                partial_path.append(curr_partial_path + [coin])
-                stack.put((coin, gen_cnt))
-                gen_cnt += 1
+                stack.put(coin)
 
         print("Pozz")
         return [0, 0]
@@ -203,6 +195,10 @@ def dp_check_skip(dp_expand, curr_partial_path, curr, curr_cost):
 
     return False
 
+def expand_count_print(expand_cnt, curr, curr_partial_path):
+    expand_cnt += 1
+    print(str(expand_cnt) + ". Expanding " + str(curr) + " with path " + str(curr_partial_path))
+
 class Uki(Agent):
     def __init__(self, x, y, file_name):
         super().__init__(x, y, file_name)
@@ -214,9 +210,9 @@ class Uki(Agent):
         pq = PriorityQueue()
 
         coin_cnt = len(coin_distance)
-        all_coins = set([coin for coin in range(0, coin_cnt)])
         if coin_cnt < 1:
             return []
+        all_coins = set([coin for coin in range(0, coin_cnt)])
 
         dp_expand = {}
         partial_path.append([0])
@@ -232,9 +228,7 @@ class Uki(Agent):
             if dp_check_skip(dp_expand, curr_partial_path, curr, curr_cost):
                 continue
 
-            # expanding node
-            expand_cnt += 1
-            print(str(expand_cnt) + ". Expanding " + str(curr) + " with path " + str(curr_partial_path))
+            expand_count_print(expand_cnt, curr, curr_partial_path)
 
             # check for end
             if len_curr_partial_path == coin_cnt + 1:
@@ -345,8 +339,7 @@ class Micko(Agent):
             if dp_check_skip(dp_expand, curr_partial_path, curr, curr_cost):
                 continue
 
-            expand_cnt += 1
-            print(str(expand_cnt) + ". Expanding " + str(curr) + " with path " + str(curr_partial_path))
+            expand_count_print(expand_cnt, curr, curr_partial_path)
 
             if len_curr_partial_path == coin_cnt + 1:
                 return curr_partial_path
