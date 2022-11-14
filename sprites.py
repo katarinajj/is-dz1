@@ -178,7 +178,7 @@ def list_to_str(my_list) -> str:
     return ret
 
 def dp_check_skip(dp_expand, curr_partial_path, curr, curr_cost):
-    curr_set = set(curr_partial_path) - {curr}
+    curr_set = curr_partial_path[:-1]  # curr_set = set(curr_partial_path) - {curr}
     key = list_to_str(curr_set) + "-" + str(curr)  # key = "012-3"
 
     if key not in dp_expand.keys():
@@ -247,7 +247,7 @@ class MSTNode:
         self.adj_list = adj_list
 
 def valid_edge(graph, start, end) -> bool:
-    # From start to end there is not a path in our current graph
+    # Returns True if from start to end there is NO path in our current graph
     visited = [False] * len(graph)
     queue = Queue()
     queue.put(start)
@@ -262,6 +262,26 @@ def valid_edge(graph, start, end) -> bool:
                 queue.put(adj)
 
     return True
+
+class DSU:
+    def __init__(self, cnt):
+        self.par = list(range(0, cnt))
+
+    def get(self, node):
+        if self.par[node] == node:
+            return node
+        self.par[node] = self.get(self.par[node])
+        return self.par[node]
+
+    def unite(self, node1, node2):
+        # Returns True if node1 and node2 are NOT united, and unites them
+        par1 = self.get(node1)
+        par2 = self.get(node2)
+        if par1 == par2:
+            return False
+        self.par[par1] = par2
+        return True
+
 
 mst_cache = {"0": 0}
 
@@ -283,6 +303,7 @@ def mst(coins, coin_distance) -> int:
                 pq.append((coin_distance[row][col], row, col))
     pq.sort(reverse=True)
 
+    dsu = DSU(len(coin_distance))
     graph = [None] * len(coin_distance)
     for coin in coins:
         node = MSTNode(coin, [])
@@ -296,10 +317,14 @@ def mst(coins, coin_distance) -> int:
             graph[end].adj_list.append(start)
             ret += cost
             edge_cnt += 1
+        # if dsu.unite(start, end):
+        #     ret += cost
+        #     edge_cnt += 1
 
     # print("RET MST JE " + str(ret))
     mst_cache[key] = ret
     return ret
+
 
 class Micko(Agent):
     def __init__(self, x, y, file_name):
@@ -352,9 +377,6 @@ class Micko(Agent):
 
                 partial_path.append(next_partial_path)
                 pq.put((next_cost + heuristics, -next_len, coin, gen_cnt, next_cost))
-                # if curr == 5:
-                #     print("For curr = " + str(curr) + " adding")
-                #     print((next_cost + heuristics, -next_len, coin, gen_cnt, next_cost))
                 gen_cnt += 1
 
         print("Pozz")
