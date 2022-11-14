@@ -122,31 +122,25 @@ class Aki(Agent):
         super().__init__(x, y, file_name)
 
     def get_agent_path(self, coin_distance):
-        partial_path = []
-        stack = LifoQueue()
-
         coin_cnt = len(coin_distance)
         if coin_cnt < 1:
             return []
         visited = [False] * coin_cnt
-        all_coins = set([coin for coin in range(0, coin_cnt)])
+        partial_path = [0]
+        visited[0] = True
+        while len(partial_path) < coin_cnt:
+            curr = partial_path[-1]
+            next_coin = -1
+            for coin in range(0, coin_cnt):
+                if visited[coin]: continue
 
-        stack.put(0)
-        while not stack.empty():
-            curr = stack.get()
-            visited[curr] = True
-            partial_path.append(curr)
+                if next_coin == -1:
+                    next_coin = coin
+                elif coin_distance[curr][coin] < coin_distance[curr][next_coin]:
+                    next_coin = coin
 
-            # check for end
-            if len(partial_path) == coin_cnt:
-                return partial_path + [0]
-
-            adj = [coin for coin in all_coins if not visited[coin]]
-            adj.sort(reverse=True)
-            adj.sort(key=lambda coin: coin_distance[curr][coin], reverse=True)
-
-            for coin in adj:
-                stack.put(coin)
+            partial_path.append(next_coin)
+            visited[next_coin] = True
 
         print("Pozz")
         return [0, 0]
@@ -177,7 +171,7 @@ class Jocke(Agent):
         return [0] + list(path) + [0]
 
 def list_to_str(my_list) -> str:
-    # my_list = set(my_list)
+    my_list = sorted(set(my_list))
     ret = ""
     for x in my_list:
         ret += str(x)
@@ -194,10 +188,6 @@ def dp_check_skip(dp_expand, curr_partial_path, curr, curr_cost):
         return True
 
     return False
-
-def expand_count_print(expand_cnt, curr, curr_partial_path):
-    expand_cnt += 1
-    print(str(expand_cnt) + ". Expanding " + str(curr) + " with path " + str(curr_partial_path))
 
 class Uki(Agent):
     def __init__(self, x, y, file_name):
@@ -216,7 +206,7 @@ class Uki(Agent):
 
         dp_expand = {}
         partial_path.append([0])
-        pq.put((0, 1, 0, gen_cnt))        # (cost, len, coin, gen_cnt)
+        pq.put((0, -1, 0, gen_cnt))        # (cost, len, coin, gen_cnt)
         gen_cnt += 1
         while not pq.empty():
             curr_cost, len_curr_partial_path, curr, curr_gen_cnt = pq.get()
@@ -228,7 +218,8 @@ class Uki(Agent):
             if dp_check_skip(dp_expand, curr_partial_path, curr, curr_cost):
                 continue
 
-            expand_count_print(expand_cnt, curr, curr_partial_path)
+            expand_cnt += 1
+            print(str(expand_cnt) + ". Expanding " + str(curr) + " with path " + str(curr_partial_path))
 
             # check for end
             if len_curr_partial_path == coin_cnt + 1:
@@ -250,14 +241,13 @@ class Uki(Agent):
         print("Pozz")
         return [0, 0]
 
-class Node:
+class MSTNode:
     def __init__(self, val, adj_list):
         self.val = val
         self.adj_list = adj_list
 
 def valid_edge(graph, start, end) -> bool:
     # From start to end there is not a path in our current graph
-    # print("Calling for " + str(start) + " i " + str(end))
     visited = [False] * len(graph)
     queue = Queue()
     queue.put(start)
@@ -284,21 +274,22 @@ def mst(coins, coin_distance) -> int:
     if coin_cnt == 0 or coin_cnt == 1:
         return 0
 
-    pq = PriorityQueue()
+    pq = []
     ret = 0
     edge_cnt = 0
     for row in coins:
         for col in coins:
             if col > row:
-                pq.put((coin_distance[row][col], row, col))
+                pq.append((coin_distance[row][col], row, col))
+    pq.sort(reverse=True)
 
     graph = [None] * len(coin_distance)
     for coin in coins:
-        node = Node(coin, [])
+        node = MSTNode(coin, [])
         graph[coin] = node
 
-    while (not pq.empty()) and (edge_cnt < coin_cnt - 1):
-        cost, start, end = pq.get()
+    while (len(pq) > 0) and (edge_cnt < coin_cnt - 1):
+        cost, start, end = pq.pop()
 
         if valid_edge(graph, start, end):
             graph[start].adj_list.append(end)
@@ -327,7 +318,7 @@ class Micko(Agent):
 
         dp_expand = {}
         partial_path.append([0])
-        pq.put((0, 1, 0, gen_cnt, 0))  # (assessment, len, coin, gen_cnt, cost)
+        pq.put((0, -1, 0, gen_cnt, 0))  # (assessment, len, coin, gen_cnt, cost)
         gen_cnt += 1
         while not pq.empty():
             x, len_curr_partial_path, curr, curr_gen_cnt, curr_cost = pq.get()
@@ -339,7 +330,8 @@ class Micko(Agent):
             if dp_check_skip(dp_expand, curr_partial_path, curr, curr_cost):
                 continue
 
-            expand_count_print(expand_cnt, curr, curr_partial_path)
+            expand_cnt += 1
+            print(str(expand_cnt) + ". Expanding " + str(curr) + " with path " + str(curr_partial_path))
 
             if len_curr_partial_path == coin_cnt + 1:
                 return curr_partial_path
