@@ -132,7 +132,8 @@ class Aki(Agent):
             curr = partial_path[-1]
             next_coin = -1
             for coin in range(0, coin_cnt):
-                if visited[coin]: continue
+                if visited[coin]:
+                    continue
 
                 if next_coin == -1:
                     next_coin = coin
@@ -142,8 +143,7 @@ class Aki(Agent):
             partial_path.append(next_coin)
             visited[next_coin] = True
 
-        print("Pozz")
-        return [0, 0]
+        return partial_path + [0]
 
 class Jocke(Agent):
     def __init__(self, x, y, file_name):
