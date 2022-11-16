@@ -219,7 +219,7 @@ class Uki(Agent):
                 continue
 
             expand_cnt += 1
-            print(str(expand_cnt) + ". Expanding " + str(curr) + " with path " + str(curr_partial_path))
+            # print(str(expand_cnt) + ". Expanding " + str(curr) + " with path " + str(curr_partial_path))
 
             # check for end
             if len_curr_partial_path == coin_cnt + 1:
@@ -356,7 +356,7 @@ class Micko(Agent):
                 continue
 
             expand_cnt += 1
-            print(str(expand_cnt) + ". Expanding " + str(curr) + " with path " + str(curr_partial_path))
+            #print(str(expand_cnt) + ". Expanding " + str(curr) + " with path " + str(curr_partial_path))
 
             if len_curr_partial_path == coin_cnt + 1:
                 return curr_partial_path
